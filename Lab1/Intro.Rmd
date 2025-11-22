@@ -1,0 +1,1515 @@
+---
+title: "R Intro"
+output: html_document
+
+---
+
+Note that the `echo = FALSE` parameter is added to the code chunk to prevent printing of the R code that generated the plot.
+
+You can insert an R code chunk either using the RStudio toolbar (the Insert button) or the keyboard shortcut Ctrl + Alt + I ( Cmd + Option + I on macOS)
+
+
+
+```{r include=FALSE, echo=FALSE}
+require("knitr")
+#opts_knit$set(root.dir = myDir)
+```
+
+# Operators and Basic Functions
+
+>- Arithmetical (+, -, *, /, ^)
+>- Relational (<, >, =>, ==, !=) 
+>- Logical (AND is “&”, OR is “|”)
+
+```{r  echo=TRUE}
+
+1+2
+4<2
+4!=3
+
+```
+
+### Math Functions
+>- `abs()` absolute value
+>- `exp()` exponential
+>- `log10()` base 10 logarithm
+>- `log()` natural logarithm
+
+
+```{r  echo=TRUE}
+abs(-10)
+log(0.3/(1-0.3))  
+
+```
+
+### Rounding Numbers
+
+>- `ceiling()` / `floor()` return the smallest / larger integer
+>- `trunc()` removes decimal
+>- `round(x,n)` rounds the values x in its first argument to the specified number n of decimal places
+
+```{r echo=TRUE}
+ceiling(7.89)
+floor(7.89)
+trunc(7.89)
+round(7.89,1)
+```
+
+
+### Expressions and Assignments
+
+To assign a numeric value to the variable (s) use `<-`  
+R also accepts the assignment using `=`
+
+```{r echo=TRUE}
+ s <- pi/sqrt(3)
+
+```
+
+Typing a name prints its contents
+
+```{r echo=TRUE}
+s 
+
+```
+
+To assign a character to the variable y  
+y `<-` “dog“
+To delete a variable: `rm(y)`
+
+```{r echo=TRUE}
+y <- "dog"
+y
+
+```
+
+
+### Help
+
+>- `help()` to obtain documentation for a given  command (equivalent to ?command_name)
+>- `example()` to view some examples on the use  of a command
+
+```{r echo=TRUE}
+help(sqrt)
+
+example(sqrt)
+
+
+```
+
+
+
+
+# R Objects
+
+Get the data type 'class(r_object)'
+
+```{r echo=TRUE}
+y <- "dog"
+class(y)
+
+z <- 11.3
+class(z)
+
+n<-10
+class(n)
+
+```
+
+### Data Structure
+
+* Homogeneous data (same type)
++ Vector
++ Array/Matrix
+
+* Heterogeneous data 
++ List
++ Data Frame
+
+
+
+# Vectors
+
+The function `c( )`, short for concatenate, can be used  to create vectors from scalars or from other vectors
+
+
+```{r echo=TRUE}
+
+x <- c(1, 1, 2, 3, 5, 8)
+x
+```
+
+It is possible to add new elements to an existing vector with `c(x, new.element)`
+
+```{r echo=TRUE}
+
+x <- c(x, 13)
+x
+
+```
+
+The colon operator “:” can be used to generate a  sequence of numbers
+```{r echo=TRUE}
+
+x <- 1:10
+x
+
+```
+
+`seq()` function creates a sequence given the starting and stopping points and an increment
+```{r echo=TRUE}
+
+seq(0,1,0.1)
+
+seq(0,10)
+
+
+```
+
+`rep()` function replicates elements
+
+>- rep(n,x) replicates the number n, x-times
+>- rep(vector,3) replicates the entire vector x-times.
+>- rep(vector,c(1,2,3)) replicates the first element once, the second twice and the third trice. 
+
+```{r echo=TRUE}
+rep(1:3, 2)
+
+rep(1:3, c(2,2,2))
+
+rep(1:3, c(2,1,2))
+
+```
+
+
+### Character Vectors
+`paste(...)` function takes an arbitrary number of  arguments and concatenates them one by one  into character strings.
+The default separator is a space, it is possible to change it with `sep` argument
+`paste0()` is equivalent to `paste(..., sep="")`
+
+```{r echo=TRUE}
+labs<-paste("Lab1", "Lab1")
+labs
+
+labsSep<-paste("Lab1", "Lab1", sep="")
+labsSep
+
+labs0<-paste0("Lab1", "Lab1")
+labs0
+```
+
+If you pass several vectors to paste0, they are concatenated in a vectorized way.
+
+```{r echo=TRUE}
+labs <- paste0(c("X","Y"),	1:10)
+labs
+
+nth <- paste0(1:12, c("st", "nd", "rd", rep("th", 9)))
+nth
+```
+
+To collapse the output into a single string, pass a `collapse` argument.
+
+```{r echo=TRUE}
+OneString<-paste0(nth, collapse = ", ")
+OneString
+```
+
+### Access elements of vectors
+
+>- `x` - the entire vector
+>- `x[n]` - the n element of x
+>- `x[c(n1,n2,n3)]` - elements n1,n2,n3 of x
+>- `x[n1:n2]` - element from n1 to n2 of x
+>- `x[-c(3,1)]` - omit elements at the specified positions
+
+>- `x[x>n1]` – elements greater than n1
+>- `x[x>n1 & x<n2]` - elements greater than n1 and smaller than n2
+
+```{r echo=TRUE}
+x <- c(1, 1, 2, 3, 5, 8, 13)
+x
+
+x[3]
+x[c(1,3,5)]  
+x[1:3]
+x[-c(1,3)] 
+
+x[x>2]
+x[x>2 & x<8]
+
+```
+### Basic functions
+
+```{r echo=TRUE}
+x = c(10,1,1,1,1,1,1,2,1,1,1,1,1,1,1,3,10) 
+
+length(x)
+typeof(x) 
+is.character(x) 
+is.integer(x) 
+
+min(x)
+max(x)
+
+range(x)
+mean(x)
+median(x)
+sum(x)
+t(x)  
+unique(x) 
+diff(x) 
+
+```
+
+### Missing values
+
+`is.na(x)` gives a logical vector of the same size as  x with value TRUE if and only if the  corresponding element in x is NA.
+is it possible to remove NA data in operations with the `na.rm=TRUE` argument
+
+```{r echo=TRUE}
+z <- c(1:3,NA)
+z
+
+ind <- is.na(z)
+ind
+
+
+z.new <- z[!is.na(z)]
+z.new
+
+mean(z)
+mean(z, na.rm = TRUE)
+
+
+z[is.na(z)] <- 0
+z
+```
+
+
+
+
+### Vectors arithmtics
+
+R operations are “vectorized”. 
+If x is a vector, then  log(x) is a vector with the logs of the elements of x.
+Arithmetic and relational operators work element by element.
+Logical operators also work element by element.
+
+```{r echo=TRUE}
+a = c(TRUE, TRUE, FALSE, FALSE) 
+b = c(TRUE, FALSE, TRUE, FALSE) 
+a & b 
+
+
+```
+
+Vectors can have different lengths.
+Shorter vectors in the expression are recycled as often as need be until they match the length of the  longest vector.
+Note that you only have a warning! 
+
+```{r echo=TRUE}
+x <- c(1, 1, 2, 3, 5, 8, 13)
+x
+y <- c(x, 0, x)
+y
+v <- 2 * x + y+ 1
+v
+```
+
+
+
+
+
+
+
+
+
+
+
+
+
+# Matrices
+
+>- R also understands matrices and higher dimensional arrays.
+>- `matrix(data, nrow=.., ncol=..)` function creates a matrix with rows and fills it by columns with the numbers 1 to 12
+>- `array(data =.., dim = length(data))`
+
+```{r echo=TRUE}
+M<- matrix(1:12, 3,4)
+M
+y <- array(1:12, c(3, 4))    # 2-d array 
+y
+
+identical(M, y)
+
+```
+
+### Address matrix elements
+
+The elements of a matrix can be addressed using the row and column subscripts in `square brackets`, separated by a `comma`:
+
+>- `M[ ,n]` – n column
+>- `M[n ,]` – n row
+>- `M[ ,1:3]` – columns from 1 to 3 and all the rows
+>- `M[,c(“col1”,”col2”,”col3”)]` - the same, but with columns names
+>- `M[-1, 1:3]` - columns from 1 to 3 and excluding the first row
+>- `M[M[,1]>2, ]` – all the rows where the first element of the column is grater than 2
+
+```{r echo=TRUE}
+M[ ,1:3]
+M[-1, 1:3]
+M[M[,1]>2, ]
+```
+
+### Matrix- basic functions
+
+Add columns and rows with the functions:
+>- `cbind()` to add columns
+>- `rbind()` to add rows
+>- `as.vector()` transforms a matrix into a vector
+
+```{r echo=TRUE}
+M<-cbind(M, c(1,1,1))
+M
+M<-rbind(M,c(1:5))
+M
+y <- as.vector(M)
+y
+
+```
+
+### Getting and setting attributes
+>- `names(x)` to name a vector
+>- `dimnames(M)` to get the names of M matrix 
+>- `colnames(M)` or `rownames(M)` 
+>- `dim(M)` to get M dimensions   #nrow and ncol
+>- `nrow(M)` and `ncol(M)` - get row and column  dimensions
+
+```{r echo=TRUE}
+x<-1:3
+names(x)<-c("a","b","c")
+names(x)
+
+
+dimnames(M) <- list(	c("row1","row2","row3", "row4"), c("col1","col2","col3","col4", "col5"))
+M
+```
+
+# Factors
+A factor is a vector object used to store categorical data. 
+It is defined by levels, which represent all the possible values that the variable can take
+
+```{r echo=TRUE}
+DrugClass <- factor(c("Antihyprt", "Antidiab", "LipidLow", "Antihyprt", "Antidiab", "LipidLow"))
+levels(DrugClass)
+```
+
+
+```{r echo=TRUE}
+#Ordered factors
+Symptoms <- factor(c("SEVERE", "MILD", "MODERATE"),
+                   levels = c("MILD", "MODERATE", "SEVERE"),
+                   ordered = TRUE)
+Symptoms
+```
+
+`tapply()` applies a function to each group of components of  the first argument, defined by the levels of the second component
+
+```{r echo=TRUE}
+DrugsDaily.Dosages<-c(30,10,50,25,15,40)
+Daily.Dosages.Means <- tapply(DrugsDaily.Dosages, 
+                              DrugClass,
+                              mean)
+Daily.Dosages.Means
+```
+
+
+# List
+A list is a generic vector containing a set of objects: numbers, character strings, matrices or even lists. 
+Like a cell array in Matlab.
+The elements of a list may have different types.
+
+The function `list()` creates a list.
+
+
+```{r echo=TRUE}
+Patient<- list( name="Mario", 
+                surname="Rossi",
+                age=65, 
+                therapy=c("LipidLow", "Antihyprt"))
+Patient
+
+
+```
+
+### Access elements of a list
+Access to numbered elements of a list with  square brackets
+
+>- `my.list [[n1]]`
+>- `my.list [[n1]] [n1.2]`
+
+Extracts named components of a list with the $ operator or with the element name
+
+```{r echo=TRUE}
+Patient[[2]]
+
+Patient[[4]][1] # if the 4th element is a vector this is its first entry.
+
+Patient$surname
+
+Patient[["surname"]]
+
+```
+
+### Add/delete elements to a list
+
+Lists, like any object, can be extended by  specifying additional components.
+
+```{r echo=TRUE}
+# Add a character vector  
+Patient$events <- c("stroke","ami") 
+# Delete an element of the list  
+Patient$therapy <- NULL
+
+```
+
+Function `c()` applied to a list results in a list,  whose components are joined together in  sequence.
+
+```{r echo=TRUE}
+Patient.B<- list(name="Giuseppe", surname="Verdi", age=70,  therapy=c("LipidLow"), events=c("stroke"))
+
+Patient.seq <- c(Patient, Patient.B) # sequence
+Patient.list <- list(Patient, Patient.B) # probably more useful…
+Patient.list
+
+```
+```{r}
+Patient.list[[1]]
+Patient.list[[2]]
+```
+
+
+
+# Data Frame
+
+>- A data frame is a list with class `data.frame`
+>- It is a list of equal-length vectors
+>- A data frame may be considered as a matrix  with columns possibly of differing modes and  attributes.
+>- It may be displayed in matrix form, and its  rows and columns can be extracted using matrix indexing conventions.
+>- Similar to table in Matlab
+
+>- The function `data.frame()` creates a data frame
+
+```{r echo=TRUE}
+DrugsDaily.Dosages<-c(30,10,50,25,15,40)
+
+Drug.df<-data.frame(DrugCL=DrugClass, 
+                    Dosages=DrugsDaily.Dosages)
+Drug.df
+
+
+```
+
+Add elements to a data frame
+
+
+```{r echo=TRUE}
+Drug.df$ID = c(1,1,1,2,2,3)
+Drug.df
+```
+
+
+### Address Data Frame elements
+
+>- `df[,n]` – n column of the data frame
+>- `df[n,]` – n row of df
+>- `df$patientsID` – works on the column named "patientsID” 
+>- `df[,n1:n3]` – shows all rows of the df for n1,n2 and n3 columns 
+>- `df[,c(n1,n3)]` – all rows of the df for n1 and n3 columns 
+
+```{r echo=TRUE}
+
+Drug.df[,1]
+```
+
+
+```{r echo=TRUE}
+
+Drug.df[1,]
+
+
+```
+
+
+```{r}
+Drug.df$ID
+```
+
+
+```{r echo=TRUE}
+Drug.df[,1:2]
+Drug.df[,c("ID","DrugCL")]
+```
+
+### Data frame attributes
+
+>- `rownames(df)` – to see or assign rows names
+>- `colnames(df)` – to see or assign columns names
+>- `dimnames(df)` – rows and columns names
+>- `dim(df)` – df dimensions
+>- `nrow(df)`, `ncol(df)` – numbers of rows and columns
+>- `names(df)` – column names
+
+```{r echo=TRUE}
+names(Drug.df)
+```
+
+
+```{r echo=TRUE}
+# change column names of the data frame
+names(Drug.df)[which(names(Drug.df) == "DrugCL")] <- "DrugCLASS"  # you can use indexing
+names(Drug.df)
+```
+
+
+```{r echo=TRUE}
+names(Drug.df)[1]<-"DrugCL"
+names(Drug.df)
+
+
+```
+
+
+```{r}
+dim(Drug.df)
+```
+
+### Basic Functions
+
+>- `str(df)` – compactly displays the structure of the R object “df”
+>- `cbind()` and `rbind()` to add columns/rows
+>- `subset()` – extract elements of a data frame, given conditions
+>- `unique()` – to extract unique elements
+
+```{r echo=TRUE}
+str(Drug.df)
+```
+
+
+```{r echo=TRUE}
+# add a new column to the data.frame
+Drug.df<-cbind(nAdmin=c(2,1,2,1,1,2), 
+               Drug.df,
+               nAdmin=c(2,1,2,1,1,2))
+Drug.df
+```
+
+
+```{r echo=TRUE}
+Drug.df$nAdmin<-NULL
+Drug.df
+```
+
+
+
+```{r echo=TRUE}
+# select rows where the Daily.Dosages is >=30
+newdata <- subset(Drug.df, Dosages >= 30)
+```
+
+
+```{r echo=TRUE}
+# select rows where the Daily.Dosages is >=30 and keep only selected columns
+
+newdata <- subset(Drug.df, Dosages >= 30, select=c(ID, DrugCL))
+newdata
+```
+
+
+```{r echo=TRUE}
+# better to use 
+newdata <- Drug.df[Drug.df$Dosages>=30,c("ID","DrugCL")]
+newdata
+
+#get the unique ID
+unique(Drug.df$ID)
+
+```
+
+>- `summary()` - provides descriptive statistics for each variable of the data frame
+>- `head()` or `tail()` - shows the first/last 6 rows of the data frame
+>- `View()` or `view()`- shows a spreadsheet-like display of the entire data frame
+
+```{r echo=TRUE}
+summary(Drug.df)
+
+```
+
+>- `order()` function sorts data
+
+```{r echo=TRUE}
+# sort by age
+Drug.df$age<-c(65,65,65,70,70,60)
+Drug.df.ordered <- Drug.df[order(Drug.df$age), ] # sort by ID and Dosage
+
+Drug.df.ordered <- Drug.df[order(Drug.df$ID, -Drug.df$Dosages), ]  #sort by ID (ascending) and Dosage (descending)
+Drug.df.ordered
+
+```
+>- `table()` allows frequency tables to be calculated from equal  length factors
+
+```{r echo=TRUE}
+table(Drug.df$DrugCL)
+table(Drug.df$ID, Drug.df$DrugCL)
+
+```
+>- `prop.table()` express table entries as fraction of Marginal Table
+
+```{r echo=TRUE}
+mytable<-table(Drug.df$ID, Drug.df$DrugCL)
+
+prop.table(mytable) # % tot
+
+prop.table(mytable,1) # % rows
+prop.table(mytable,2) # % cols
+
+
+
+```
+
+
+### Merge Data Frames
+
+The function `merge()` merges two data frames by  common columns or row names. 
+
+```{r echo=TRUE}
+# Create a new data frame
+
+Clinical.Data.BMI<- data.frame(PTS=c(1,2,3), 
+                               BMI=c(26,23,28))  #Merge two data frames, through columns with different names
+Clinical.Data.BMI
+
+Drug.df.new<-merge(Drug.df,Clinical.Data.BMI, 
+                   by.x = "ID", by.y = "PTS", 
+                   all.x = TRUE)
+
+knitr::kable(Drug.df.new, format = "markdown")
+
+```
+
+
+
+
+### Remove or substitute missing values
+
+```{r echo=TRUE}
+Drug.df.new[c(2,4),c("age")]<-NA
+Drug.df.new
+```
+
+
+```{r echo=TRUE}
+Drug.df.new.rmMissing<- na.omit(Drug.df.new)
+Drug.df.new.rmMissing
+```
+
+
+```{r echo=TRUE}
+Drug.df.new[is.na(Drug.df.new)] <- 0 # recode the NA value as 0
+Drug.df.new
+```
+
+# Reading & Writing
+
+>- Existing dataset in R: `data("dataset_name")` and `attach(dataset_name)`
+
+```{r echo=TRUE}
+data("iris")
+knitr::kable(iris[1:10,], format = "markdown")
+
+```
+
+>- `write.table()`, `write.csv()` print an argument to a file
+
+
+```{r echo=TRUE}
+getwd()
+
+write.csv(Drug.df, "Drugs.csv",row.names = TRUE)
+
+```
+
+>- `read.table()`, `read.csv()` read files in a tabular format and create a data.frame from them
+
+```{r echo=TRUE}
+
+DrugsRead<-read.csv("Drugs.csv")
+knitr::kable(DrugsRead, format = "markdown")
+
+```
+
+
+
+# Loops
+
+In R it is possible to express loops in almost "plain English", by asking whether our variable belongs to a range of values
+
+### For loop
+
+```{r echo=TRUE}
+
+x <- c(1, 1, 2, 3, 5, 8)
+usq<-c()
+
+for(i in 1:length(x)) {
+  usq[i]<-x[i]*x[i]  
+  print(usq[i])
+}
+
+usq
+```
+
+### Nested for loop
+
+```{r echo=TRUE}
+
+mymat = matrix(nrow=10, ncol=5)  
+for(i in 1:dim(mymat)[1]) {
+  for(j in 1:dim(mymat)[2]) {
+    mymat[i,j] = i*j }
+}
+
+mymat
+```
+
+# Apply functions - grouping  {base}
+
+Apply functions are a family of functions in base R which allow  to repetitively perform an action on multiple chunks of data. 
+An apply function is essentially a loop, but run faster than loops and often require less code.
+
+The function `apply(X, MARGIN, FUN)`  X is an array or matrix (this is the data that you will be performing the function on),  MARGIN specifies whether you want to apply the function across rows (1) or columns (2) -  FUN is the function you want to use
+
+`apply()` will coerce to a matrix first
+
+```{r echo=TRUE}
+M <- matrix(seq(1,16), 4, 4)  
+# apply min to rows
+apply(M, 1, min)
+
+# apply max to columns
+apply(M, 2, max)
+
+```
+
+
+Use apply to transform data 
+Note  MARGIN = 1:2 will have the function operate on each cell.
+
+
+```{r echo=TRUE}
+M2 <- apply(M,1:2, function(x) x+3)
+M
+M2
+```
+
+
+`lapply()` and `sapply()`  work with data in vectors and lists 
+
+`lapply()` treats the vector like a list, and applies the function to each point in the vector
+
+```{r echo=TRUE}
+vec=seq(1:10)
+lapply(vec, sum) 
+
+
+```
+
+```{r echo=TRUE}
+A<-c(1:9)
+B<-c(1:12)
+C<-c(1:15)
+my.lst<-list(A,B,C)
+my.lst
+lapply(my.lst, sum)
+```
+
+It is also possible to "unlist" data with `unlist()`
+
+```{r}
+unlist(lapply(my.lst, sum))
+```
+
+
+
+
+`sapply()` simplity the output, and - if possible - it returuns a vector
+
+```{r echo=TRUE}
+sapply(my.lst, sum)
+```
+
+
+
+
+`sapply()` can be used to transform data inside the list
+
+```{r echo=TRUE}
+my.lst2 <- sapply(my.lst, function(x) x*2)
+my.lst2
+```
+
+
+# Conditional Statments
+
+**if (test_expression) {statement } 
+else {statement2 }**
+
+function `ifelse(test_expression,yes,no)` function returns a value with the same shape as test_expression which is filled with elements selected from either yes or no, depending on whether the element of test is TRUE or FALSE
+
+```{r echo=TRUE}
+Drug.df$age.class<- ifelse(Drug.df$age>=70 , "Over 70", "Under 70")
+Drug.df[,c("age","age.class")]
+```
+
+# Create Functions
+
+**my_function <- function(arg1, arg2){
+body}**
+
+```{r echo=TRUE}
+triple <- function(x){
+  3*x
+}
+
+triple(3)
+
+```
+
+
+
+
+# Plots {base}
+
+Basic functions to plot data 
+
+>- `plot()`  for scatter plots
+>- `hist()`  to plot histograms
+>- `boxplot(x ~ y)`  to plot boxplot  
+
+
+```{r  echo=FALSE}
+# get iris data
+my.data<- iris
+
+# scatter plot
+plot(my.data$Sepal.Length, my.data$Petal.Length)
+
+
+# histogram
+hist(my.data$Sepal.Length, breaks=10)
+
+#box plots
+boxplot(my.data$Sepal.Length ~ my.data$Species,
+        col=(c("gold","darkgreen","tomato")), 
+        main="Length of Iris Species",
+        ylab="Length", xlab="Species")
+
+```
+
+# Restructure data with reshape2
+
+The package **reshape2** allow to re-structure data (wide <-> long formats)
+The `melt()` and `dcast()` functions are for reshaping wide-to-long and long-to-wide, respectively.
+
+The `melt` function took a dataframe that had a column for each variable, and created a dataframe with only TWO columns: one named variable and one named value.
+Is possible to specify an `id.vars`, or *between-subjects* variables, so that each row is an instance of one of the *within-subjects* variables.
+
+```{r echo=TRUE}
+library(reshape2)
+head(airquality)
+
+MeltedAq <- melt(airquality, id.vars = c("Month", "Day"))
+MeltedAq<-MeltedAq[order(MeltedAq$Month,MeltedAq$Day), ]
+MeltedAq[1:10,]
+
+```
+
+Is possible to rename  within-subjects variable and their values.
+
+```{r echo=TRUE}
+MeltedAq <- melt(airquality, id.vars = c("Month", "Day"),
+                 variable.name = "MyVar", 
+                 value.name = "MyVal")
+MeltedAq<-MeltedAq[order(MeltedAq$Month,MeltedAq$Day),]
+MeltedAq[1:10,]
+
+```
+
+`dcast` uses a formula to describe the shape of the data. 
+Arguments on the left refer to the *ID variables* and the arguments on the right refer to the *measured variables*.
+
+```{r echo=TRUE}
+MeltedAq <- melt(airquality, id.vars = c("Month", "Day"))
+head(MeltedAq)
+
+CastedAq <- dcast(MeltedAq, Month + Day ~ variable)
+head(CastedAq)
+
+```
+
+Be careful when casting a dataframe in which there is more than one value per data cell without specifying the aggregation function.
+
+```{r echo=TRUE}
+CastedAq <- dcast(MeltedAq, Month  ~ variable)
+head(CastedAq)
+```
+
+When casting  data and there are multiple values per cell, it is necessary to tell dcast how to aggregate the data. 
+
+```{r}
+CastedAq<-dcast(MeltedAq, Month ~ variable, 
+                fun.aggregate = mean,  na.rm = TRUE)
+head(CastedAq)
+```
+
+
+# Tidyverse
+
+https://www.tidyverse.org/
+
+# R for Data Science
+
+https://r4ds.had.co.nz/index.html
+
+
+## ggplot2
+
+https://github.com/rstudio/cheatsheets/blob/master/data-visualization-2.1.pdf
+https://r-graph-gallery.com/index.html 
+
+The function `ggplot()` creates a coordinate system to add layers to. 
+The first argument of `ggplot(data = mydata)` is the dataset to use in the graph.
+
+The graph is completed by adding one or more layers. 
+The function `geom_point()` adds a layer of points to the plot, which creates a scatterplot. 
+ggplot2 comes with many *geom functions* that each add a different type of layer to a plot. 
+
+Each *geom function* in ggplot2 takes a *mapping* argument. This defines how variables in your dataset are mapped to visual properties. 
+The mapping argument is always paired with `aes()`, and the x and y arguments of `aes()` specify which variables to map to the x and y axes.
+
+
+`ggplot(data = <DATA>) + <GEOM_FUNCTION> (mapping = aes(<MAPPINGS>))`
+
+
+```{r echo=TRUE}
+library(ggplot2)
+ggplot2::mpg
+
+```
+
+```{r echo=TRUE}
+# displ, a car’s engine size, in liters.
+# hwy, a car’s fuel efficiency on the highway
+plott<-ggplot(data = mpg) + geom_point( aes(x = displ,
+                                                     y = hwy))
+
+```
+
+### Aesthetics
+It is possible to convey information about the data by mapping the aesthetics in the plot to the variables in the dataset. 
+
+
+```{r echo=TRUE}
+#map the colors of the points to the class variable to reveal the class of each car
+ggplot(data = mpg) + 
+  geom_point( aes(x = displ, y = hwy, color = class))
+```
+
+
+```{r echo=TRUE}
+# with the alpha aesthetic, which controls the transparency of the points, 
+ggplot(data = mpg) + 
+  geom_point( aes(x = displ, y = hwy, alpha = class))
+```
+
+
+```{r echo=TRUE}
+# with the shape aesthetic, which controls the shape of the points.
+ggplot(data = mpg) + 
+  geom_point( aes(x = displ, y = hwy, shape =class))
+
+
+```
+
+### Facets 
+It is possible to split a plot into facets, subplots,  each one display one subset of the data.
+
+```{r echo=TRUE}
+aa<-ggplot(data = mpg) + 
+  geom_point(mapping = aes(x = displ, y = hwy)) + 
+  facet_wrap(~ class, nrow = 2)
+aa
+```
+
+### Geometric Objects
+
+A geom is the geometrical object that a plot uses to represent data. 
+Plots are described by the type of geom that the plot uses. 
+
+For example, bar charts use bar geoms, line charts use line geoms, boxplots use boxplot geoms, scatterplots use the point geom.
+
+To change the geom in  plots, change the geom function added to `ggplot()`
+
+
+
+```{r echo=TRUE}
+
+ggplot(data = mpg) + 
+  geom_smooth(aes(x = displ, y = hwy))
+
+
+
+```
+
+Change the smoothing `method`
+
+```{r echo=TRUE}
+ggplot(data = mpg) + 
+  geom_smooth(mapping = aes(x = displ, y = hwy), method = lm)
+
+```
+
+Set different `linetype` in groups
+
+
+```{r echo=TRUE}
+ggplot(data = mpg) + 
+  geom_smooth(mapping = aes(x = displ, y = hwy, 
+                            linetype = drv))
+
+```
+
+
+Use different `color` in groups
+
+```{r echo=TRUE}
+ggplot(data = mpg) +
+  geom_smooth(
+    mapping = aes(x = displ, y = hwy, 
+                  color = as.factor(drv) ) )
+```
+
+
+### Mulitple geometries
+
+To display multiple geoms in the same plot, add multiple geom functions to `ggplot()`
+
+```{r echo=TRUE}
+
+ggplot(data = mpg) + 
+  geom_point(mapping = aes(x = displ, y = hwy)) +
+  geom_smooth(mapping = aes(x = displ, y = hwy))
+
+```
+
+A better way of doing - it without code replication - is to passing the mapping in ggplot
+
+```{r echo=TRUE}
+
+ggplot(data = mpg, mapping = aes(x = displ, y = hwy)) + 
+  geom_point() + 
+  geom_smooth()
+
+```
+
+Mappings in a geom function are treated as local mappings for the layer, and they overwrite the global mappings for that layer only. 
+It is possible to display different aesthetics in different layers.
+
+```{r echo=TRUE}
+ggplot(data = mpg, mapping = aes(x = displ, y = hwy)) + 
+  geom_point(mapping = aes(color = class)) + 
+  geom_smooth()
+```
+
+
+### Bar Charts
+
+The first chart displays the total number of instances, grouped by the x aesthetic.
+The `geom_bar()` transform the data with the *count* statistic.
+
+```{r echo=TRUE}
+
+ggplot(data = diamonds) + 
+  geom_bar(mapping = aes(x = cut))
+
+table(diamonds$cut)
+
+```
+
+Bar chart can be colored using `fill`
+
+
+```{r echo=TRUE}
+ggplot(data = diamonds) + 
+  geom_bar(mapping = aes(x = cut, fill = cut))
+```
+
+```{r echo=TRUE}
+ggplot(data = diamonds) + 
+  geom_bar(mapping = aes(x = cut, fill = clarity))
+```
+
+#### Positions in bar charts
+
+The stacking is performed automatically by the position adjustment specified by the position argument. 
+The options are: "identity", "dodge" or "fill".
+
+>- `position = "identity"` will place each object exactly where it falls in the context of the graph.
+>- `position = "fill"` works like stacking, but makes each set of stacked bars the same height.This makes it easier to compare proportions across groups.
+>- `position = "dodge"` places overlapping objects directly beside one another. This makes it easier to compare individual values.
+
+```{r echo=TRUE}
+ggplot(data = diamonds, mapping = aes(x = cut, fill = clarity)) + 
+  geom_bar(alpha = 1/5, position = "identity")
+```
+
+
+```{r echo=TRUE}
+ggplot(data = diamonds, mapping = aes(x = cut, fill = clarity)) + 
+  geom_bar(position = "fill")
+```
+
+```{r echo=TRUE}
+ggplot(data = diamonds, mapping = aes(x = cut, fill = clarity)) + 
+  geom_bar(position = "dodge")
+```
+
+
+Use different coordinate systems: `coord_polar()` uses polar coordinates
+
+
+```{r echo=TRUE}
+ggplot(data = diamonds) + 
+  geom_bar(  mapping = aes(x = cut, fill = cut), width = 1  ) + 
+  coord_polar()
+```
+
+
+
+
+
+
+
+### Histograms and Density plots
+
+Function `geom_histogram()` with default setting 
+
+```{r echo=TRUE}
+ggplot(data = diamonds) + 
+  geom_histogram( mapping = aes(x = carat))
+
+```
+
+Change `binwidth` or number of `bins`
+
+
+```{r echo=TRUE}
+ggplot(data = diamonds) + 
+  geom_histogram( mapping = aes(x = carat), binwidth = 0.5)
+
+```
+
+```{r echo=TRUE}
+ggplot(data = diamonds) + 
+  geom_histogram( mapping = aes(x = carat), bins =  50)
+
+```
+
+
+Function `geom_density()` grouped by class and with `alpha`
+
+```{r echo=TRUE}
+ggplot(data = diamonds) + 
+  geom_density( mapping = aes(x = carat, fill=cut), alpha=0.2)
+
+```
+
+
+### Boxplots 
+
+Basic box plot using the function `geom_boxplot()`
+
+
+```{r echo=TRUE}
+
+ggplot(diamonds, aes(x=cut, y=carat)) + 
+  geom_boxplot()
+
+```
+
+Change outlier, color, shape and size
+
+
+```{r echo=TRUE}
+
+ggplot(diamonds, aes(x=cut, y=carat)) + 
+  geom_boxplot(outlier.colour="red", 
+               outlier.shape=8,
+               outlier.size=4)
+
+```
+
+
+The function `stat_summary()` can be used to add mean points to a box plot 
+
+```{r echo=TRUE}
+
+ggplot(diamonds, aes(x=cut, y=carat)) + 
+  geom_boxplot()+
+    geom_violin()
+  #stat_summary(fun=mean, geom="point", shape=23, size=4)
+
+```
+
+Customize colors, labs, coordinates
+
+```{r echo=TRUE}
+
+ggplot(diamonds, aes(x=cut, y=carat, fill=cut)) + 
+  geom_boxplot()+
+  labs(title="Plot of carat per cut",x="Cut", y = "Carat")+
+  scale_fill_brewer(palette="RdBu")+
+  coord_flip()+
+  theme_minimal()
+
+```
+
+
+
+
+
+
+## dplyr
+
+
+https://github.com/rstudio/cheatsheets/blob/master/data-transformation.pdf
+
+The dplyr provide a function for data manipulation. These functions work with:
+
+Rows
+
+>- `filter()` chooses rows based on column values.
+>- `slice()` chooses rows based on location.
+>- `arrange()` changes the order of the rows.
+
+Columns
+
+>- `select()` changes whether or not a column is included.
+>- `rename()` changes the name of columns.
+>- `mutate()` changes the values of columns and creates new columns.
+>- `relocate()` changes the order of the columns.
+
+Groups of rows
+
+>- `summarise()` collapses a group into a single row
+>- `group_by()` define the variables for grouping
+
+>- `%>%` (piping function)
+
+
+### Do. Or do not. There is no try. 
+
+```{r echo=TRUE}
+library(dplyr)
+summary(starwars)
+```
+
+### Filter rows
+The `filter()` function selects a subset of rows in a data frame
+
+```{r echo=TRUE}
+starwars %>% filter(skin_color == "light", 
+                    eye_color == "brown")
+
+```
+
+### Arrange rows
+
+The `arrange()` function reorders rows, also in a descending order
+
+```{r echo=TRUE}
+starwars %>% arrange(height, mass)
+
+```
+
+
+
+```{r echo=TRUE}
+starwars %>% arrange(desc(height))
+
+```
+
+### Slice row
+`slice()` to index rows by their (integer) locations
+
+```{r echo=TRUE}
+starwars
+starwars %>% slice(5:10)
+```
+
+`slice_sample()` randomly selects rows.  The option prop to choose a certain proportion of the cases.
+
+```{r echo=TRUE}
+starwars %>% slice_sample(n = 5)
+starwars %>% slice_sample(prop = 0.1)
+```
+
+### Piping
+
+```{r echo=TRUE}
+starwars %>%
+  filter(!is.na(height)) %>%
+  slice_max(height, n = 3)
+
+```
+
+
+
+### Select
+The `select()` function allows to  zoom in on a useful subset using operations that usually only work on numeric variable positions
+
+```{r echo=TRUE}
+# Select columns by name
+starwars %>% select(hair_color, skin_color, eye_color)
+
+# Select all columns between hair_color and eye_color (inclusive)
+starwars %>% select(hair_color:eye_color)
+
+# Select all columns except those from hair_color to eye_color (inclusive)
+starwars %>% select(!(hair_color:eye_color))
+
+# Select all columns ending with color
+starwars %>% select(ends_with("color"))
+```
+
+
+### Mutate
+
+The function `mutate()` allows adding new columns
+
+```{r echo=TRUE}
+starwars %>% mutate(height_m = height / 100)
+```
+
+Piping again
+
+```{r echo=TRUE}
+starwars %>%
+  mutate(height_m = height / 100) %>%
+  select(height_m, height, everything())
+```
+
+
+### Relocate
+
+`relocate()` uses a similar syntax as `select()` to move blocks of columns at once
+
+```{r echo=TRUE}
+
+starwars %>% relocate(sex:homeworld, .before = height)
+
+```
+
+
+### Overwrite data
+```{r echo=TRUE}
+
+starwarsMod<-starwars %>% relocate(sex:homeworld, .before = height)
+names(starwars)
+names(starwarsMod)
+```
+
+Choose the data format
+
+```{r echo=TRUE}
+
+starwarsModDF<-as.data.frame(starwars %>% relocate(sex:homeworld, .before = height))
+class(starwarsMod)
+class(starwarsModDF)
+```
+
+### Summarise and group by
+
+The function `summarise()`  collapses a data frame to a single row.`
+
+```{r echo=TRUE}
+starwars %>% summarise(height = mean(height, na.rm = TRUE),
+                       mass= mean(mass, na.rm = TRUE))
+```
+
+
+Create a table grouped by variables with `group_by()`, and then summarise each group with specific functions
+
+```{r echo=TRUE}
+MeanHM<-starwars %>%
+ group_by(species, sex) %>%
+  summarise(
+    MeanHeight = mean(height, na.rm = TRUE), 
+    MeanMass = mean(mass, na.rm = TRUE)
+  )
+MeanHM
+```
+
+
+```{r echo=TRUE}
+MeanHMdf<-as.data.frame(starwars %>%
+                          group_by(species, sex) %>%
+                          summarise(
+                            MeanHeight = mean(height, na.rm = TRUE),
+                            MeanMass = mean(mass, na.rm = TRUE)
+                          ))
+MeanHMdf
+
+```
+
+
+
+# Table 1
+
+`table1` is an useful package to create "Table 1"
+It is standard practice in epidemiology and related fields that the first table of any journal article, referred to as “Table 1”, is a table that presents descriptive statistics of baseline characteristics of the study population stratified by exposure. 
+The `table1` package makes it fairly straightforward to produce such a table using R.
+
+```{r echo=TRUE}
+library(table1)
+library(boot)  # to get the melanoma data set
+
+melanoma2 <- melanoma
+
+
+# Factor the basic variables 
+melanoma2$status <- 
+  factor(melanoma2$status, 
+         levels=c(2,1,3),
+         labels=c("Alive", # Reference
+                  "Melanoma death", 
+                  "Non-melanoma death"))
+melanoma2$sex <-  factor(melanoma2$sex, levels=c(1,0),  labels=c("Male","Female"))
+melanoma2$ulcer <-  factor(melanoma2$ulcer, levels=c(0,1),   labels=c("Absent",   "Present"))
+
+```
+
+
+
+```{r echo=TRUE}
+table1(~ factor(sex) + age + factor(ulcer) + thickness | status, 
+       data=melanoma2, 
+       overall="Total") # Change name
+
+
+```
+
+
+
+

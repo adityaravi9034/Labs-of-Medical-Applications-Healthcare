@@ -1,0 +1,349 @@
+
+# Ad hoc methods and `mice`
+Vignettes by Gerko Vink and Stef van Buuren
+https://www.gerkovink.com/miceVignettes/
+
+
+```{r setup}
+library(mice)
+```
+
+The dataset `nhanes` contains 25 observations on the following 4 variables:
+
+* *age*: Age group (1 = 20-39, 2 = 40-59, 3 = 60+)
+* *bmi*: Body mass index (kg/m^2)
+* *hyp*: Hypertensive (1 = no, 2 = yes)
+* *chl*: Total serum cholesterol (mg/dL)
+
+The dataset looks as follows:
+
+```{r}
+nhanes
+summary(nhanes)
+```
+
+## Inspect the missing data pattern
+
+With multiple imputation we want to provide plausible values for the missing values, while taking the uncertainty about these numbers into account. Hence, we will first inspect the missing data pattern:
+
+```{r}
+md.pattern(nhanes)
+```
+
+The missingness pattern shows that there are 27 missing values in total: 10 for chl , 9 for bmi and 8 for hyp. 
+Moreover, there are 13 completely observed rows, four rows with 1 missing, one row with 2 missings and seven rows with 3 missings. 
+Looking at the missing data pattern is always useful (but may be difficult for datasets with many variables). 
+It can give you an indication on how much information is missing and how the missingness is distributed. The nhanes dataset is a data set with non-monotone missing values. 
+
+
+## Complete-case analysis 
+
+Regression model where chl is predicted from bmi and age.
+When we would model without taking the missing values into account, we will get the following model:
+```{r}
+model <- lm(chl ~ bmi + age, data = nhanes)
+summary(model)
+```
+
+Note that almost half of the cases were not used in the analysis.
+
+```{r}
+model <- lm(chl ~ bmi + age, data = na.omit(nhanes))
+summary(model)
+```
+
+
+## Multiply impute the data
+Now, we can multiply impute the missing values in our dataset - let's do it with default values and 10 iteration 
+```{r}
+imp <- mice(nhanes, print = TRUE, 
+            maxit = 10, # A scalar giving the number of iterations. 
+            m=5, # Number of multiple imputations.
+            seed = 24415) #10 iterations
+
+```
+
+```{r}
+imp <- mice(nhanes, print = FALSE, 
+            maxit = 20, # A scalar giving the number of iterations. 
+            m=5, # Number of multiple imputations.
+            seed = 24415) #10 iterations
+```
+
+## Analysis of imputation process 
+
+It is useful to plot the parameters against the number of iterations to check for convergence. 
+On convergence, the different streams should be freely intermingled with one another, without showing any definite trends. 
+
+Inspect the convergence of the algorithm
+
+```{r}
+plot(imp) 
+```
+
+
+
+## Check and Change imputation methods
+
+For each column, the algorithm requires a specification of the imputation method. To see which method was used by default:
+
+```{r}
+imp$method
+```
+
+Predictive mean matching calculates the predicted value of target variable  Y  according to the specified imputation model. For each missing entry, the method forms a small set of candidate donors (typically with 3, 5 or 10 members) from all complete cases that have predicted values closest to the predicted value for the missing entry. 
+Predictive mean matching is an example of a hot deck method, where values are imputed using values from the complete cases matched with respect to some metric. The expression “hot deck” literally refers to a pack of computer control cards containing the data of the cases that are in some sense close.
+More about pmm > https://stefvanbuuren.name/fimd/sec-pmm.html
+
+
+Check the data set structure
+
+```{r}
+summary(nhanes)
+
+```
+
+Use a "better" data set
+
+```{r}
+summary(nhanes2)
+
+```
+
+The mice() function takes these properties automatically into account. Impute the nhanes2 dataset
+
+```{r}
+imp <- mice(nhanes2, print=F)
+imp$method
+```
+
+Notice that mice has set the imputation method for variable hyp to logreg, which implements multiple imputation by logistic regression.
+Let us change the imputation method for bmi to Bayesian normal linear regression imputation
+
+```{r}
+pippo<-imp$meth
+pippo["bmi"] <- "norm"
+pippo
+```
+
+
+Run the imputation again
+
+```{r}
+imp <- mice(nhanes2, 
+            meth=meth,
+            print=F)
+imp$meth
+```
+
+
+Study the convergence again
+
+```{r}
+plot(imp)
+```
+
+
+
+## Extend the number of iterations
+
+Though using just 5/10 iterations often works well in practice, we need to extend the number of iterations of the mice algorithm to confirm that there is no trend and that the trace lines intermingle well. 
+We can increase the number of iterations to 40 by running 35 additional iterations using the `mice.mids()` function.
+
+```{r}
+imp40 <- mice.mids(imp, maxit=35, print=F)
+plot(imp40)
+```
+
+
+
+## Change the visit sequence
+If the visitSequence is not specified, the mice() function imputes the data from left to right. 
+
+```{r}
+imp$visitSequence
+```
+
+When the missing data pattern is close to monotone, convergence may be speeded by visiting the columns in increasing order of the number of missing data.
+
+```{r}
+imp <- mice(nhanes2, meth=meth,print=F, 
+            maxit = 10,
+            m=3,
+            vis =  "monotone")
+imp$visitSequence
+```
+
+```{r}
+plot(imp)
+```
+
+It is also possible to change the visit sequence manually
+
+```{r}
+pluto<-c("chl", "bmi","age" ,"hyp"  )
+imp <- mice(nhanes2, meth=meth,print=F, visitSequence = pluto)
+plot(imp)
+
+```
+
+
+
+
+## Further imputation diagnostic checks with  `stripplot()` and `densityplot()`
+
+Generally, one would prefer for the imputed data to be plausible values, i.e. values that could have been observed if they had not been missing. 
+In order to form an idea about plausibility, one may check the imputations and compare them against the observed values. 
+
+If we are willing to assume that the data are missing completely at random (MCAR), then the imputations should have the same distribution as the observed data. 
+In general, distributions may be different because the missing data are MAR (or even MNAR). However, very large discrepancies need to be screened. 
+
+Let us plot the observed and imputed data of chl 
+The convention is to plot observed data in blue and the imputed data in red.
+
+```{r}
+stripplot(imp, chl~.imp, pch=20, cex=2)
+```
+
+Since the PMM method draws imputations from the observed data, imputed values have the same gaps as in the observed data, and are always within the range of the observed data. 
+The figure indicates that the distributions of the imputed and the observed values are similar. The observed data have a particular feature that, for some reason, the data cluster around the value of 187. The imputations reflect this feature, and are close to the data. 
+
+
+The following command creates a simpler version of the graph from the previous step and adds the plot for bmi.
+
+```{r}
+stripplot(imp)
+```
+
+Remember that bmi was imputed by Bayesian linear regression and (the range of) imputed values may therefore be different than observed values.
+Remember that bmi was imputed by Bayesian linear regression and (the range of) imputed values may therefore be different than observed values.
+
+
+Another helpful plot is the density plot:
+
+```{r}
+densityplot(imp)
+
+```
+
+The density of the imputed data for each imputed dataset is showed in magenta while the density of the observed data is showed in blue. Again, under our previous assumptions we expect the distributions to be similar.
+
+
+
+## Explore the imputed data with `complete()` function
+
+In complete data set missing values have been substitute with the last result of the iteration
+
+```{r}
+complete(imp)
+```
+
+
+## Analysis of regression model with imputed data - `with()` and `pool()`
+
+It is important to note that taking the average of the imputed datasets and analyze the averaged data is **not** the way to proceed. 
+Doing this will yield incorrect standard errors, confidence intervals and p-values because it ignores the between-imputation variability. 
+In other words, it does not take the uncertainty about the imputed variables into account.
+
+The appropriate way to analyze multiply imputed data is to perform complete data analysis on each imputed dataset seperately. In the `mice` package we can use the `with()` command for this purpose. 
+
+For example, we can fit a regression model on the multiply imputed data
+
+```{r}
+fit <- with(imp, lm(chl ~ bmi + age))
+fit
+```
+
+We can also print out the estimate from the first and second completed datasets by:
+
+```{r}
+coef(fit$analyses[[1]])
+coef(fit$analyses[[2]])
+coef(fit$analyses[[3]])
+```
+
+
+
+Note, that the estimates for bmi and age are different from each other in the two completed datasets. This is due to the uncertainty created by the missing data. 
+
+
+We can now apply the standard pooling rules by doing the following. In this way we get the final coefficient estimates for the model using imputed data:
+
+```{r}
+pool.fit <- pool(fit)
+summary(pool.fit)
+```
+
+
+This gives the relevant pooled regression coefficients and parameters, as well as the fraction of information about the coefficients missing due to nonresponse (`fmi`) and the proportion of the variation attributable to the missing data (`lambda`  ). 
+
+
+
+## Comparison to complete-case analysis
+
+The estimated model ignoring the missing values (complete-case analysis) was given by:
+```{r}
+summary(model)
+```
+
+When we compare this multiply imputed model model with complete-case analysis, we see that the coefficient estimates are quite different. The estimates for `bmi` and `age` are significant in both models. The standard errors of the coefficient estimates of complete-analysis are smaller here than the standard errors of the model were the missing values were imputed. This is not always the case. Because the multiply imputed model is based on 25 observations rather than 13, it could also have been the other way around.
+
+In this case we assumed that the parameter estimates are normally distributed around the population value. Many types of estimates are approximately normally distributed: e.g., means, standard deviations, regression coefficients, proportions and linear predictors. 
+
+
+
+# RMSE 
+
+Compare different imputations
+
+```{r}
+nhanes2<-nhanes2[,c("chl","age","bmi")]
+
+#Bayesian linear regression
+imp1 <- mice(nhanes2, method = "norm", m = 10, print = FALSE)
+fit1 <- with(imp1, lm(chl ~ bmi+age ))
+tab1 <- summary(pool(fit1), "all", conf.int = TRUE)
+tab1
+res1<-tab1$estimate
+
+```
+
+
+```{r}
+#Linear regression
+imp2 <- mice(nhanes2, method = "norm.nob", m = 10, print = FALSE)
+fit2 <- with(imp2, lm(chl ~ bmi+age ))
+tab2 <- summary(pool(fit2), "all", conf.int = TRUE)
+tab2
+res2<-tab2$estimate
+```
+
+
+```{r}
+#Complete data case (we assume this is the true value)
+fitcomplete<- with(na.omit(nhanes2), lm(chl ~ bmi+age ))
+resCompl<-summary(fitcomplete)
+resCompl
+restrue<-resCompl$coefficients[,1]
+```
+```{r}
+res1
+res2
+```
+
+
+```{r}
+restrue
+```
+
+
+```{r}
+RMSE1<-sqrt(mean((res1 - restrue)^2))
+RMSE2<-sqrt(mean((res2 - restrue)^2))
+
+RMSE1
+RMSE2
+```
+
+
+

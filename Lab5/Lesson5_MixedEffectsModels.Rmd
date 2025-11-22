@@ -1,0 +1,378 @@
+
+---
+
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+```{r}
+library(lme4)
+library(ggplot2)
+library(dplyr)
+```
+
+
+## Example 1 Study to investigate how voice pitch is related to politeness
+Original tutorial https://bodowinter.com/tutorial/bw_LME_tutorial2.pdf 
+
+
+Subjects asked to respond to different hypothetical scenarios that are either formal or informal situations.
+Each subject is given a list of all the scenarios, each subject gives multiple polite or informal responses.
+Voice pitch is measured.
+
+
+```{r}
+
+politeness= read.csv("http://www.bodowinter.com/tutorial/politeness_data.csv")
+
+which(is.na(politeness)==T)
+```
+
+
+```{r}
+politeness <- politeness[complete.cases(politeness),]
+summary(politeness)
+```
+
+
+### Do people speak in higher frequency in more polite scenario?
+When we investigate how the attitude affect the pitch, gender has influence on voice pitch so we have to account for it
+
+The basic **fixed** effect model is
+*frequency = attitude + gender + e*
+
+
+```{r}
+# Check variability in terms of pitch in formal and informal situation (attitude) for all the subjects and consider their gender
+
+ggplot(data=politeness, aes(x= attitude, y=frequency,
+                            color=gender, fill=gender)) + 
+  geom_boxplot(alpha=0.5) +
+  
+  stat_summary(fun.y = median,geom = 'line',  
+               aes(group = gender, colour = gender),
+               position = position_dodge(width = 1)  )+
+  
+  theme_minimal() 
+```
+
+In both cases, the median line is lower for the polite than for the informal condition. 
+However, there may be a bit more overlap between the two politeness categories for males than for females.
+
+
+#### Subjects repeted measures
+
+The study design took **multiple measures per subject**. 
+That is, each subject gave multiple polite responses and multiple informal responses. 
+
+This would violate the independence assumption: Multiple responses from the same subject cannot be regarded as independent from each other. 
+
+Every person has a slightly different voice pitch, and this is going to be an idiosyncratic factor that affects all responses from the same subject, thus rendering these different responses inter-dependent rather than independent.
+
+The way we’re going to deal with this situation is to add a **random effect for subject**. 
+This allows to resolve this non-independence by assuming a different “baseline” pitch value for each subject. 
+
+```{r}
+#Different baseline pitch values for each subject
+#Account for individual variation
+
+ggplot(data=politeness,  aes(x= as.factor(subject), y=frequency, 
+                             color=as.factor(gender),
+                             fill=as.factor(gender))) + 
+  
+  
+  geom_boxplot(alpha=0.5) + 
+  geom_jitter( size=0.4, alpha=0.9) +
+  theme_minimal()
+
+```
+
+Subjects F1 to F3 are female subjects. Subjects M3 to M7 are male subjects. Males have lower voices than females (as is to be expected). 
+
+But on top of that, within the male and the female groups, you see lots of individual variation, with some people having relatively higher values for their sex and others having relatively lower values.
+
+We can model these individual differences by assuming different random intercepts for each subject. That is, each subject is assigned a different intercept value, and the mixed model estimates these intercepts for you
+
+
+
+#### Different Scenarios 
+
+In the design there’s an additional source of non-independence that needs to be accounted for: there are different items. We also expect by-item variation. 
+
+For example, there might be something special about “excusing for coming too late” which leads to overall higher pitch (maybe because it’s more embarrassing than asking for a favor), regardless of the influence of politeness. 
+
+And whatever it is that makes one item different from another, the responses of the different subjects in our experiment might similarly be affected by this random factor that is due to item-specific idiosyncrasies. That is, if “excusing for coming to late” leads to high pitch (for whatever reason), it’s going to do so for subject 1, subject 2, subject 3 and so on. 
+
+Thus, the different responses to one item cannot be regarded as independent, or, in other words, there’s something similar to multiple responses to the same item – even if they come from different people. Again, if we did not account for these interdependencies, we would violate the independence assumption.
+
+We also have to add a **random effect for scenarios**. 
+
+
+
+
+```{r}
+#Different baseline pitch value for scenarios
+
+ggplot(data=politeness,  aes(x= as.factor(scenario), y=frequency, 
+                             color=as.factor(scenario),
+                             fill=as.factor(scenario))) + 
+  geom_jitter( size=0.4, alpha=0.9) +
+  
+  geom_boxplot(alpha=0.5) + theme_minimal()
+```
+
+
+
+
+### Train the mixed effects models with the lmer() function
+
+#### Random Intercepts 
+
+
+We do this by adding an additional random effect:
+
+*frequency = attitude + gender + (1|subject) + (1|item) +e*
+
+So, on top of **different intercepts** for different subjects, we now also have **different intercepts** for different items. 
+
+We now “resolved” those non-independencies (our model knows that there are multiple responses per subject and per item), and we accounted for by-subject and by-item variation in overall pitch levels.
+
+Traditional analyses do averaging are in principle legit, mixed models give you much more flexibility, and they take the full data into account
+
+
+```{r}
+# Mixed models account for both sources of variation in a single model
+politeness %>% ggplot(aes(x= attitude, y=frequency)) +
+  geom_jitter() +
+  facet_grid(scenario~subject)
+
+```
+
+```{r}
+# The model needs a random effect (see the error)
+# lmer(frequency ~ attitude, data=politeness)
+```
+Add **random intercepts** for **subjects** and **scenario**
+
+```{r}
+#Create a model that used the fixed effect “attitude” (polite vs. informal) to predict voice pitch, controlling for by-subject and by-item variability.
+
+politeness.model = lmer(frequency ~ attitude + (1|subject) + (1|scenario), 
+                        data=politeness)
+summary(politeness.model)
+```
+
+Focus on the **output for the random effects** and check Std.Dev.
+
+Scenario has much less variability than subject.
+
+Residual (i.e. variability that’s not due to either scenario or subject)
+This  “ε” , the random deviations from the predicted values that are not due to subjects and items. 
+
+In the **output for the fixed effects** the coefficient “attitudepol” is the slope for the categorical effect of politeness.
+As we didn’t inform our model that there’s two sexes in our dataset, the intercept is particularly off, in between the voice pitch of males and females.
+
+```{r}
+# Let’s add gender as an additional fixed effect
+
+politeness.model.g = lmer(frequency ~ attitude + gender + 
+                            (1|subject) + (1|scenario),
+                          data=politeness)
+
+summary(politeness.model.g)
+```
+
+We added “gender” as a fixed effect because the relationship between sex and pitch is systematic and predictable
+
+This is different from the random effects subject and item, where the relationship between these and pitch is much more unpredictable and “random”. 
+
+Note that compared to our earlier model without the fixed effect gender, the variation that’s associated with the random effect “subject” dropped considerably. 
+
+This is because the variation that’s due to gender was confounded with the variation that’s due to subject. Now that we have added the effect of gender, we have shifted a considerable amount of the variance that was previously in the random effects component (differences between male and female individuals) to the fixed effects component.
+
+
+##### Statistical significance
+Likelihood Ratio Test as a means to attain p-values.
+That is probability of seeing the data you collected given your model.
+
+We compared a full model (*with* the fixed effects in question) against a reduced model *without* the effects in question. 
+In each case, we conclude that a fixed effect is significant if the difference between the likelihood of these two models is significant.
+
+
+```{r}
+#Null model (without attitude)
+politeness.null = lmer(frequency ~ gender +  (1|subject) + (1|scenario), data=politeness,  REML=FALSE)
+
+# Full model
+politeness.model = lmer(frequency ~ attitude + gender + (1|subject) + (1|scenario), data=politeness, REML=FALSE)
+
+```
+
+```{r}
+#Compare the models
+anova(politeness.null,politeness.model)
+```
+
+
+#### Random Slopes VS  Random Intercepts
+
+
+```{r}
+#Check the coefficient of the model
+coef(politeness.model)
+
+```
+
+Each scenario and each subject is assigned a different intercept.
+
+But not also that the fixed effects (attitude and gender) are all the same for all subjects and items. 
+
+The first model is what is called a random intercept model. In this model, we account for baseline-differences in pitch, but we assume that whatever the effect of politeness is, it’s going to be the same for all subjects and items.
+
+```{r}
+#Different slopes  for each subject
+
+ggplot(data=politeness,  aes(x= as.factor(attitude), y=frequency, 
+                             color=as.factor(subject),
+                             fill=as.factor(subject))) + 
+  geom_boxplot(alpha=0.5) + facet_grid(.~subject)+
+  
+  stat_summary(fun.y = median,geom = 'line',  
+               aes(group = subject, colour = subject),
+               position = position_dodge(width = 1)  )+
+  geom_jitter( size=0.4, alpha=0.9) +
+  
+  
+  theme_minimal()
+
+```
+
+
+
+```{r}
+#Different slopes  for scenarios
+
+ggplot(data=politeness,  aes(x= as.factor(attitude), y=frequency, 
+                             color=as.factor(scenario),
+                             fill=as.factor(scenario))) + 
+  geom_boxplot(alpha=0.5) + facet_grid(.~as.factor(scenario))+
+  stat_summary(fun.y = median,geom = 'line',  
+               aes(group = as.factor(scenario), colour = as.factor(scenario)),
+               position = position_dodge(width = 1)  )+
+  geom_jitter( size=0.4, alpha=0.9) +
+  
+  
+  theme_minimal()
+
+```
+
+
+Some items would elicit more or less politeness. That is, the effect of politeness might be different for different items. Likewise, the effect of politeness might be different for different subjects. For example, it might be expected that some people are more polite, others less. 
+
+So, what we need is a random slope model, where subjects and items are not only allowed to have differing intercepts, but where they are also allowed to have different slopes for the effect of politeness. 
+
+The factors (1+attitude|subject) and (1+attitude|scenario) tell the model to expect differing baseline-levels of frequency (the intercept, represented by 1) as well as differing responses to the main factor in question, which is “attitude”
+
+
+```{r}
+# Add the random slope to the model and check the coefficients
+
+politeness.model.rs = lmer(frequency ~ attitude +gender +
+                             (1+attitude|subject) +
+                             (1+attitude|scenario),
+                           data=politeness,
+                           REML=FALSE)
+
+coef(politeness.model.rs)
+
+```
+
+
+Now, the column with the by-subject and by-item coefficients for the effect of politeness (“attitudepol”) is different for each subject and item. 
+
+
+```{r}
+#Check also this models vs the null one
+
+politeness.null.rs = lmer(frequency ~ gender + (1+attitude|subject) + (1+attitude|scenario), data=politeness, REML=FALSE)
+    anova(politeness.null.rs,politeness.model.rs)
+```
+
+
+
+## Example 2 Analysing longitudinal data, the Sleep Study
+
+
+Effects of sleep deprivation on reaction time for subjects from a population of truck drivers.
+
+Subjects were divided into groups allowed only a limited amount of sleep each night
+Group of 18 subjects restricted to three hours of sleep per night for the first ten days of the trial
+Each subject’s reaction time was measured several times on each day of the trial
+
+Response variable: reaction time in ms (average of the reaction time measurements on a given subject for a given day)
+Covariates: Days (number of days of sleep deprivation) and subject (participant ID)
+
+
+```{r}
+summary(sleepstudy)
+```
+To check how the overall reaction of the individuals changed as a response to the sleep deprivation, we can fit an Ordinary Least Squares (OLS) Linear Regression with Reaction as a response variable and Days as a predictor / explanatory variable with lm 
+
+```{r}
+#Fixed effect model
+summary(lm(Reaction~Days, data = sleepstudy))
+
+```
+
+
+```{r}
+ggplot(sleepstudy,aes(x=Days,y=Reaction)) + geom_point() + geom_smooth(method = "lm")
+
+```
+
+We can observe that Reaction vs. Days has a increasing trend but with a lot of variation between days and individuals. 
+The data points cluster within individuals and therefore are not independent. 
+
+```{r}
+# Check the differnt patterns 
+
+ggplot(sleepstudy,aes(x=Days,y=Reaction)) + geom_smooth(method = "lm",level = 0.95) + 
+  geom_point() + facet_wrap(~Subject, nrow = 3, ncol = 6)
+```
+
+
+We can see that most of the individuals have increasing Reaction profile while some have a neutral or even decreasing profile. 
+
+The slopes, intercepts and confidence intervals of the individual fits are affected by their common statistic, shared variance.
+
+We have to account for
+two fixed-effects parameters: the intercept and slope of the linear time trend for the population
+two random effects for each subject: the random effects for each subject are the deviations in intercept and slope of that subject’s time trend from the population values
+
+
+We will fit LMM with random slopes and intercepts for the effect of Days for each individual (Subject). 
+
+This will correspond to adding the (Days | Subject) term to the linear model Reaction ~ Days that was previously used inside the lm function.
+
+```{r}
+summary(lmer(Reaction ~ Days + (Days | Subject), sleepstudy))
+```
+
+Comparing the Residual errors between Fixed (lm) and Random (lmer) effects models, we can see that the Residual error decreased for the Random Effects model meaning that we captured more variation in the response variable with the Random Effects model.
+
+```{r}
+sqrt(sum(residuals(lm(Reaction~Days,data=sleepstudy))^2)/(dim(sleepstudy)[1]-2))
+
+sqrt(sum(resid(lmer(Reaction~Days+(Days|Subject),sleepstudy))^2)/(dim(sleepstudy)[1]-2))
+```
+
+The same conclusion can be drawn from comparing AIC and BIC values for the two models, again the LMM with Random Effects fits the data better.
+
+```{r}
+fit1 <- lm(Reaction ~ Days, data = sleepstudy)
+fit2 <- lmer(Reaction ~ Days + (Days | Subject), sleepstudy, REML = FALSE)
+anova(fit2, fit1)
+```
+

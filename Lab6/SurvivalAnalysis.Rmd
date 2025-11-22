@@ -1,0 +1,311 @@
+---
+
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+## Preliminaries
+Install the following packages/libraries in R
+
+```{r}
+library(survival)
+library(survminer)
+library(lubridate)
+library(ggsurvfit)
+library(gtsummary)
+library(tidycmprsk)
+library(condSURV)
+library(dplyr)
+library(survex)
+library(survival)
+library(ranger)
+```
+
+## Data
+
+We will use the Lung Cancer dataset from the survival package. 
+It contains the variables and data we need for this lab, specifically
+•	time (survival time in days for each person)
+•	status (censoring status: 1=Censored/2=Not censored)
+•	sex (1=Male/2=Female)
+
+
+```{r}
+View(lung)
+summary(lung)
+
+```
+
+However, there is a problem with the coding of status
+Remember how Yes-No variables need to be coded for regression analysis. 
+We need to recode status to adhere to the usual convention for Yes/No variables, such that 
+0=Not censored (“No”)
+1=Censored (“Yes”)
+
+```{r}
+lung <- 
+  lung %>% 
+  mutate(
+    status = recode(status, '1' = 0, '2' = 1)
+  )
+
+```
+
+```{r}
+View(lung)
+summary(lung)
+
+```
+
+## Response Time
+We need to create a response time (known here as a “survival object”) that is based on the variable time and that takes into account if a subject was censored at that time. 
+
+In the survival package, this is done with the Surv function
+
+
+
+```{r}
+Surv(lung$time, lung$status)[1:10]  
+Surv(lung$time, lung$status)
+```
+
+## Kaplan-Meier analysis
+Now we can do some analysis. 
+
+This is done with the survfit function, which will create a new data structure that is ready for analysis and plotting. 
+
+```{r}
+s1 <- survfit(Surv(time, status) ~ 1, data = lung)
+str(s1)
+
+```
+
+Let’s plot the curve. 
+We are using ggsurvfit, which uses ggplot2 (to facilitate the special requirements of plotting a K-M curve). 
+
+```{r}
+survfit2(Surv(time, status) ~ 1, data = lung) %>% 
+  ggsurvfit() +
+  labs(
+    x = "Days",
+    y = "Overall survival probability"
+  )
+```
+
+Add some details
+
+```{r}
+survfit2(Surv(time, status) ~ 1, data = lung) %>% 
+  ggsurvfit() +
+  labs(
+    x = "Days",
+    y = "Overall survival probability"
+    ) + 
+  add_confidence_interval() +
+  add_risktable()
+
+```
+
+We could look at survival past a time that specify. 
+
+For example, we might want to know what is the probability of survival to one year. Note that the times in the lung dataset are in days, so if we want to know the survival in terms of years, we will need to specify that- this is why we need the 365.25 in the times argument below. 
+It divides the time (in days by the number of days in a year (accounting for leap years). 
+
+```{r}
+summary(survfit(Surv(time, status) ~ 1, data = lung), 
+        times = 365.25)
+```
+We can also get a summary table 
+
+```{r}
+survfit(Surv(time, status) ~ 1, data = lung) %>% 
+  tbl_survfit(
+    times = 365.25,
+    label_header = "**1-year survival (95% CI)**"
+  )
+
+```
+
+We can also calculate median survival time
+
+```{r}
+survfit(Surv(time, status) ~ 1, data = lung)
+```
+We can compare two groups  
+
+```{r}
+survdiff(Surv(time, status) ~ sex, data = lung)
+
+```
+
+And plot the curves
+
+```{r}
+survfit2(Surv(time, status) ~ sex, data = lung) %>% 
+  ggsurvfit() +
+  labs(
+    x = "Days",
+    y = "Overall survival probability"
+    ) + 
+  add_confidence_interval() +
+  add_risktable()
+```
+
+
+## Cox Regression 
+Try creating a Cox model using the lung cancer data 
+
+```{r}
+coxph(Surv(time, status) ~ sex, data = lung)
+```
+
+We can get nicer output in the form of a regression table that includes the hazard ratio, based on a categorical variable
+
+```{r}
+coxph(Surv(time, status) ~ sex, data = lung) %>% 
+  tbl_regression(exp = TRUE)
+
+```
+
+We can run a multivariable model
+
+```{r}
+coxph(Surv(time, status) ~ ., data = lung) %>% 
+  tbl_regression(exp = TRUE)
+
+```
+
+We can also save the model and plot it
+```{r}
+model <- coxph(Surv(time, status) ~ ., data = lung)
+```
+
+```{r}
+ggforest(model)
+```
+
+## Competing Risk
+We are switching to a new dataset, Melanoma, which is in the MASS package. 
+```{r}
+data(Melanoma, package = "MASS")
+```
+
+We have to recode the status variable 
+
+```{r}
+table(Melanoma$status)
+
+```
+
+```{r}
+Melanoma <- 
+  Melanoma %>% 
+  mutate(
+    status = as.factor(recode(status, '2' = 0, '1' = 1, '3' = 2))
+  )
+
+```
+
+Note the coding here: 
+0=Alive 
+1=Died from melanoma 
+2=Died from other causes.  
+
+```{r}
+table(Melanoma$status)
+
+```
+
+Let’s look at the cumulative incidence 
+
+The “estimate” column contains the cumulative incidence, and the SE and CI are based on Gray’s test, which is like a Chi-square.
+
+```{r}
+cuminc(Surv(time, status) ~ 1, data = Melanoma)
+```
+
+Plot the curve (for the primary event)
+
+```{r}
+cuminc(Surv(time, status) ~ 1, data = Melanoma) %>% 
+  ggcuminc() + 
+  labs(
+    x = "Days"
+  ) + 
+  add_confidence_interval() +
+  add_risktable()
+
+```
+
+Plot the cumulative incidence for both event types 
+
+```{r}
+cuminc(Surv(time, status) ~ 1, data = Melanoma) %>% 
+  ggcuminc(outcome = c("1", "2")) +
+  ylim(c(0, 1)) + 
+  labs(
+    x = "Days"
+  )
+
+```
+Compare the cumulative incidence of death, but this time based on another covariate (i.e. ulcer)
+
+```{r}
+cuminc(Surv(time, status) ~ ulcer, data = Melanoma) %>% 
+  tbl_cuminc(
+    times = 1826.25, 
+    label_header = "**{time/365.25}-year cuminc**") %>% 
+  add_p()
+
+```
+Plot the cumulative incidence curves based on this covariate
+
+```{r}
+cuminc(Surv(time, status) ~ ulcer, data = Melanoma) %>% 
+  ggcuminc() + 
+  labs(
+    x = "Days"
+  ) + 
+  add_confidence_interval() +
+  add_risktable()
+
+```
+
+
+##Machine learning and survival analysis with explainable survival models
+
+
+```{r}
+# create a model based on random survival forests
+model <- ranger(Surv(time, status) ~ ., data = veteran)
+```
+
+
+```{r}
+# create an explainer
+explainer <- explain(model, 
+                     data = veteran[, -c(3, 4)],
+                     y = Surv(veteran$time, veteran$status))
+```
+
+
+```{r}
+# evaluate the model
+model_performance(explainer)
+```
+
+
+```{r}
+# visualize permutation-based feature importance
+plot(model_parts(explainer))
+```
+
+
+```{r}
+# explain one prediction with SurvSHAP(t)
+plot(predict_parts(explainer, veteran[1, -c(3, 4)]))
+
+```
+

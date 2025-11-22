@@ -1,0 +1,369 @@
+---
+title: "MissingDimRed"
+output: html_document
+---
+
+## 1.Load and preporcess the dataset
+
+```{r setup, warning=FALSE, message=FALSE}
+
+my_dir <- "/Users/ariannadagliati/Dropbox/Advanced DM/Corso2022_23/MissingValues/Lab 2 - Missing Data (copia)-20230327/"
+
+library(ggplot2)
+library(dplyr)
+library(mice)
+
+#set a theme
+theme_set(theme_bw() +    theme(legend.title = element_blank(),  panel.grid.minor = element_blank()))
+
+# Read file and check the data
+MyData <-read.csv( file.path(my_dir, 'MosaicData.csv'), sep=";"  ) 
+summary(MyData)
+
+```
+
+
+```{r }
+
+MyDataBaseline <- MyData %>%
+  
+  #Select only the first observation at baseline (time = 0)
+  
+  filter(time==0) %>%
+  
+  #Exclude all the commorbidities variables
+  
+  select(patID:MicroAln) %>% 
+  
+  #Exclude timeSEQ
+  select(!c(timeSEQ, date, time)) %>% 
+  
+  #Transform date (check as.Date), gender and smoke in the proper format
+  #Compute the age of T2D diagnosis
+  
+  mutate( gender=as.factor(gender),
+          smoke=as.factor(smoke)    )
+
+
+
+summary(MyDataBaseline)
+```
+
+## 2.	Impute the Data and train a regression model
+
+### 2.1.	Check the missingness pattern with the md.pattern() function, what do you observe? Are there any variables that it would be better to remove? If so, exclude them and re-check the pattern.
+
+
+```{r}
+MyDataModel<-MyDataBaseline %>% select(!c(patID, CreatCl,MicroAln))
+
+complete.df<-na.omit(MyDataModel)
+md.pattern(MyDataModel)
+```
+
+### 2.2.	The aim is to build a regression model that use all the variable selected at this point to predict hba1c values. Build a provisional model with the original data set using the lm() function. Check the results.
+
+```{r echo=TRUE}
+model <- lm(hba1c ~ ., data = MyDataModel)
+summary(model)
+```
+
+### 2.3.	Impute data with mice() using default methods, number of imputations (m=5) and iterations (maxit=5). Set seed. Check the results plotting the iterations results. What do you observe?
+
+```{r}
+imp <- mice(MyDataModel, print = FALSE,  seed = 24415) #10 iterations
+```
+
+
+```{r}
+plot(imp) 
+```
+
+### 2.4.	Check the methods used for imputations and change them on the basis of the variable type. Check if the iteration results improve. Plot the iteration results distributions with stripplot() and densityplot() What do you observe?
+
+
+```{r}
+imp$method
+```
+
+```{r}
+meth<-imp$method
+```
+
+```{r}
+meth['t2d']<-"sample"
+meth[c("bmi","sbp","colTot")]<-"norm"
+meth[c("hba1c", "trigl")]<-"norm.nob"
+meth['smoke']<-"lda"
+
+meth
+```
+
+```{r}
+imp <- mice(MyDataModel, print = FALSE, 
+            meth = meth, 
+            maxit  = 10)
+```
+
+```{r}
+plot(imp) 
+```
+
+```{r}
+stripplot(imp)
+```
+
+```{r}
+densityplot(imp)
+```
+
+### 2.5.	Try to change the visit sequence, does it affect the results?
+
+
+```{r}
+visSqns<-c("colTot","t2d","age_t2DDiagnosis", "sbp","trigl","hba1c" )
+
+```
+
+```{r}
+imp <- mice(MyDataModel, print = FALSE,visitSequence = visSqns,
+            meth = meth)
+```
+
+```{r}
+plot(imp) 
+```
+
+```{r}
+stripplot(imp)
+```
+
+```{r}
+densityplot(imp)
+```
+
+### 2.6.	Increase the number of imputation and iteration, does it affect the results?
+
+```{r}
+imp <- mice(MyDataModel, print = FALSE,m=10, maxit = 10,
+            meth = meth)
+```
+
+```{r}
+plot(imp) 
+```
+
+
+```{r}
+stripplot(imp)
+```
+
+```{r}
+densityplot(imp)
+```
+
+### 2.7.	Train the regression models on the imputed datasets, obtained with the chosen imputation strategy, and check the results. What do you observe?
+
+```{r}
+fit <- with(imp, lm(hba1c ~    gender+smoke+age+t2d+bmi+sbp+colTot+ trigl  ))
+fit
+```
+
+
+```{r}
+pool.fit <- pool(fit)
+summary(pool.fit)
+```
+
+
+### 2.8.	Create a data set only with complete observations, use the `na.omit()` function. Exclude Creatinine Clearance and Micro Albuminuria. Add random missing values with the function `ampute()`. Transform gender and smoke into factors.
+
+
+```{r}
+MyDataComplete<-na.omit(MyDataModel)
+
+#Add random Missing Values
+MyDataAmputeList <- ampute(data = MyDataComplete)
+MyDataAmputeListDF<-as.data.frame(MyDataAmputeList$amp)
+summary(MyDataAmputeListDF)
+MyDataAmputeListDF$gender<-as.factor(MyDataAmputeListDF$gender)
+MyDataAmputeListDF$smoke<-as.factor(MyDataAmputeListDF$smoke)
+
+```
+
+### 2.9.	Train a regression model on the complete data (we assume this is the true value)
+
+```{r}
+
+fitcomplete<- with(MyDataComplete, lm(hba1c ~    gender+smoke+age+t2d+bmi+sbp+colTot))
+resCompl<-summary(fitcomplete)
+resCompl
+restrue<-resCompl$coefficients[,1]
+```
+
+### 2.10.	Impute the data set with random missing values with at least two different approaches (i.e. change methods, number of iterations). Train the regression models.
+
+```{r}
+imp1 <- mice(MyDataAmputeListDF, print = FALSE, 
+             maxit  = 20)
+fit1 <- with(imp1,  lm(hba1c ~    gender+smoke+age+t2d+bmi+sbp+colTot   ))
+tab1 <- summary(pool(fit1), "all", conf.int = TRUE)
+tab1
+res1<-tab1$estimate
+
+```
+
+
+```{r}
+meth<-imp1$method
+meth
+
+meth[c("age","t2d",
+       "hba1c","bmi","sbp","colTot", "trigl")]<-"norm.nob"
+
+meth
+
+impNorm <- mice(MyDataAmputeListDF, print = FALSE,  
+                maxit  = 10, method = meth)
+fitNorm <- with(impNorm, lm(hba1c ~    gender+smoke+age+t2d+bmi+sbp+colTot   ))
+tabNorm <- summary(pool(fitNorm), "all", conf.int = TRUE)
+resNorm<-tabNorm$estimate
+```
+
+
+### 2.11.	Compute the RMSE to compare the results of the different imputation approaches. Chose the best one. What do you observe?
+
+```{r}
+RMSE1<-sqrt(mean((res1 - restrue)^2))
+RMSE2<-sqrt(mean((resNorm - restrue)^2))
+
+RMSE1
+RMSE2
+```
+
+
+## 3.	Dimensionality Reduction
+
+### 3.1 Impute the whole data set with the best option (see 2.11) and use the complete() function to obtain an imputed data set.
+
+
+```{r}
+imputedBest <- mice(MyDataModel, print = FALSE)
+MyDataComplete<-na.omit(complete(imputedBest))
+
+
+
+```
+
+### 3.2.	Use PCA, tSNE and UMAP (tweak the parameters to check if results improve) for dimensionality reduction. Illustrate the results using hba1c (as continuous values) as outcome.
+
+#### PCA
+
+```{r}
+# perform PCA 
+MyDataPCA <- select(MyDataComplete,-hba1c) %>% 
+  mutate( gender=as.numeric(gender),
+          smoke=as.numeric(smoke)) %>% 
+  prcomp(center=TRUE, scale.=TRUE)
+
+```
+
+```{r}
+#check components
+print(summary(MyDataPCA))
+```
+
+```{r }
+# create a Data Frame 
+MyDataPCA.df <- data.frame(x = MyDataPCA$x[,1],
+                            y = MyDataPCA$x[,2],
+                            A1c = (MyDataComplete[, c("hba1c")]) )
+
+```
+
+```{r}
+ggplot(MyDataPCA.df, aes(x, y, colour = A1c)) +
+  geom_point()
+```
+
+
+
+#### tSNE
+
+
+```{r}
+library(Rtsne)
+```
+
+```{r }
+# Set a seed if you want reproducible results
+set.seed(1133)
+
+# Need to be performed on unique values
+MyDataTsne <- unique(select(MyDataComplete,-hba1c)) %>% 
+  Rtsne(perplexity = 50,# Perplexity parameter. (optimal number of neighbors)
+        pca=FALSE,# Whether an initial PCA step should be performed
+        theta=0.0) # Speed/accuracy trade-off (increase for less accuracy), set to 0.0 for exact TSNE (default: 0.5)
+```
+
+```{r }
+# create a Data Frame - it's easier because of unique values
+MyDataTsne.df <- data.frame(x = MyDataTsne$Y[,1],
+                            y = MyDataTsne$Y[,2],
+                            A1c = (MyDataComplete[!duplicated(MyDataComplete), c("hba1c")]) )
+
+```
+
+```{r}
+ggplot(MyDataTsne.df, aes(x, y, colour = A1c)) +
+  geom_point()
+```
+
+
+#### UMAP
+
+```{r}
+library(umap)
+```
+
+
+```{r}
+custom.config = umap.defaults
+custom.config$random_state = 1133
+
+#change n_neighbors and min_dist
+custom.config$n_neighbors = 10
+custom.config$min_dist = 0.1
+
+custom.config$n_components = 2
+```
+
+
+```{r}
+
+
+MyDataUMAP<-select(MyDataComplete,-c(hba1c)) %>% 
+  mutate( gender=as.numeric(gender),
+          smoke=as.numeric(smoke)) %>% 
+  umap(config=custom.config) 
+
+
+```
+
+```{r }
+# create a Data Frame 
+MyDataUMAP.df <- data.frame(x = MyDataUMAP$layout[,1],
+                            y = MyDataUMAP$layout[,2],
+                            
+                            A1c = (MyDataComplete[, c("hba1c")]) )
+
+```
+
+
+```{r}
+ggplot(MyDataUMAP.df, aes(x, y, colour = A1c)) +
+  geom_point()
+```
+
+
+
