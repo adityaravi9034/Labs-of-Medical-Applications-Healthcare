@@ -1,8 +1,7 @@
 # Medical Applications & Healthcare - Laboratory Work
 
 **Course Instructor:** Prof. Arianna Dagliati
-**Institution:** [Your University]
-**Academic Year:** [Your Year]
+**Institution:** University of Pavia
 
 ---
 
